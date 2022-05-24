@@ -34,7 +34,23 @@ wget https://storage.googleapis.com/example_download_data/subset_flac.tar  # dow
 python main.py
 ```
 
-alternativly you can use the provided notebook
+alternatively you can use the provided notebook
+
+### Output
+
+```
+Dataset_root
+│
+└───folder1
+│   │   file_001.txt
+│   │   file_002.txt
+|   |   ...
+│   
+└───folder2
+|   │   file_001.txt
+│   │   file_002.txt
+|   |   ...
+```
 
 ## TODO
 
