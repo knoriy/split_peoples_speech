@@ -65,7 +65,7 @@ def split_audio(root_textgrid_path, root_wav_path):
         dest_path = os.path.join(processed_path, f"{wav_file_name}_%03d.flac")
 
         # Split audio
-        os.system(f"ffmpeg -i {src_wav_path} -f segment -segment_times {split_time} {dest_path}")
+        os.system(f"ffmpeg -nostats -loglevel 0 -i {src_wav_path} -f segment -segment_times {split_time} {dest_path}")
 
 
 
@@ -73,7 +73,7 @@ def main():
     df = pd.read_csv('/home/knoriy/Documents/laion/split_peoples_speech/subset.tsv', names=["audio_filepath","duration", "shard_id", "text"], header=None, sep="\t")
     base_pps_dataset_path = '/home/knoriy/Documents/laion/split_peoples_speech/subset'
 
-    generate_txt(df)
+    # generate_txt(df)
 
     for row in tqdm.tqdm(df.iloc, desc="Converting .flac files to .wav"):
         flac_path = os.path.join(base_pps_dataset_path, f'{row["audio_filepath"]}')

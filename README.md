@@ -13,6 +13,13 @@ conda install pandas praat-textgrids
 
 ```
 
+### Download MFA Accustic models
+
+``` shell
+mfa models download acoustic english_mfa
+mfa models download dictionary english_mfa
+```
+
 ### Install dependencies
 
 ```Shell
@@ -38,7 +45,7 @@ alternatively you can use the provided notebook
 
 ### Output
 
-```
+``` shell
 Dataset_root
 │
 └───folder1
@@ -55,5 +62,6 @@ Dataset_root
 ## TODO
 
 - [ ] Save transcript along with audio
-- [ ] Please check to avoid processing samples twice
+- [ ] checks to avoid processing samples twice
+- [ ] checks to avoid processing samples twice
 - [ ] Test with other languages
