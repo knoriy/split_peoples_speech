@@ -25,15 +25,16 @@ def get_subset_df(json_dir=None):
     subset_df = subset_df.drop(0, axis=1)
 
     return subset_df
+    # get_subset_df().to_csv('/home/knoriy/Documents/laion/split_peoples_speech/subset.tsv', sep='\t', header=None, index=False)
 
-def flac_to_wav(audio_in_path, audio_out_path, no_log=True, overwrite=False):
-    log_cmd = ' -v quiet' if no_log else ''
+
+def flac_to_wav(audio_in_path, audio_out_path, overwrite=False):
     overwrite_cmd = ''
     if overwrite:
         overwrite_cmd = '-y'
 
-    os.system(f'ffmpeg {overwrite_cmd} -i {audio_in_path} {log_cmd} {audio_out_path}')
+    return os.system(f'ffmpeg {overwrite_cmd} -loglevel error -i {audio_in_path} {audio_out_path}')
 
-def generate_txt(df):
-    for row in tqdm.tqdm(df.iloc, desc="Generating .txt files for MFA"):
-        open(f'./subset/{row["audio_filepath"].split(".")[0]}.txt', 'w').write(row['text'])
+def generate_txt(dir:str, text:str):
+    with open(dir, 'w') as file:
+        file.write(text)
