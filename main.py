@@ -47,18 +47,6 @@ def get_longest_silance(textgrid_words):
 
     return word_index, time
 
-def split_all_audiofiles(root_textgrid_path, root_wav_path):
-    threads= []
-
-    textgrid_paths = glob.glob(f'{root_textgrid_path}/**/*.TextGrid', recursive=True)
-
-    with ThreadPoolExecutor(max_workers=12) as executor:
-        for path in tqdm.tqdm(textgrid_paths, desc='spliting flac files into 5-10 seconds'):
-            threads.append(executor.submit(split_audio, path, root_wav_path))
-
-        # for task in as_completed(threads):
-        #     print(task.result()) 
-
 def split_audio(path:str, root_wav_path:str):
     textgrid = textgrids.TextGrid(path)
     textgrid_words = textgrid.get('words')
@@ -108,6 +96,17 @@ def save_all_text_to_file(df):
         # for task in as_completed(threads):
         #     print(task.result()) 
 
+def split_all_audiofiles(root_textgrid_path, root_wav_path):
+    threads= []
+
+    textgrid_paths = glob.glob(f'{root_textgrid_path}/**/*.TextGrid', recursive=True)
+
+    with ThreadPoolExecutor(max_workers=12) as executor:
+        for path in tqdm.tqdm(textgrid_paths, desc='spliting flac files into 5-10 seconds'):
+            threads.append(executor.submit(split_audio, path, root_wav_path))
+            
+        # for task in as_completed(threads):
+        #     print(task.result()) 
 
 if __name__ == '__main__':
 
@@ -123,4 +122,5 @@ if __name__ == '__main__':
     # convert_all_to_wav(df)
 
     # generate_textgrids(base_pps_dataset_path)
-    split_audio('/home/knoriy/Documents/laion/split_peoples_speech/subset_textgrids', base_pps_dataset_path)
+    # split_audio('/home/knoriy/Documents/laion/split_peoples_speech/subset_textgrids', base_pps_dataset_path)
+    split_all_audiofiles('/home/knoriy/Documents/laion/split_peoples_speech/subset_textgrids', base_pps_dataset_path)
