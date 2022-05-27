@@ -61,7 +61,8 @@ Dataset_root
 
 ## TODO
 
-- [ ] Save transcript along with audio
+- [X] Save transcript along with audio
+- [X] Multithread all passes
 - [ ] checks to avoid processing samples twice
 - [ ] checks to avoid processing samples twice
 - [ ] Test with other languages
