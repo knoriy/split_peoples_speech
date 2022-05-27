@@ -47,35 +47,44 @@ def get_longest_silance(textgrid_words):
 
     return word_index, time
 
-def split_audio(root_textgrid_path, root_wav_path):
+def split_all_audiofiles(root_textgrid_path, root_wav_path):
+    threads= []
+
     textgrid_paths = glob.glob(f'{root_textgrid_path}/**/*.TextGrid', recursive=True)
 
-    for path in tqdm.tqdm(textgrid_paths, desc='spliting flac files into 5-10 seconds'):
-        textgrid = textgrids.TextGrid(path)
-        textgrid_words = textgrid.get('words')
+    with ThreadPoolExecutor(max_workers=12) as executor:
+        for path in tqdm.tqdm(textgrid_paths, desc='spliting flac files into 5-10 seconds'):
+            threads.append(executor.submit(split_audio, path, root_wav_path))
 
-        word_index, split_time = get_longest_silance(textgrid_words)
+        # for task in as_completed(threads):
+        #     print(task.result()) 
 
-        # get src path
-        wav_paths = os.path.split(path)
-        wav_file_name = f'{str(wav_paths[-1]).split(".")[0]}.flac'
-        wav_folder_name = os.path.split(wav_paths[0])[-1]
+def split_audio(path:str, root_wav_path:str):
+    textgrid = textgrids.TextGrid(path)
+    textgrid_words = textgrid.get('words')
 
-        src_wav_path = os.path.join(root_wav_path, wav_folder_name, wav_file_name) # remove aligned and replace file extension
+    word_index, split_time = get_longest_silance(textgrid_words)
 
-        # create destinaltion path
-        processed_path = os.path.join(f'{root_wav_path}_split', wav_folder_name)
-        os.makedirs(processed_path, exist_ok=True)
-        dest_path = os.path.join(processed_path, f"{wav_file_name}")
+    # get src path
+    wav_paths = os.path.split(path)
+    wav_file_name = f'{str(wav_paths[-1]).split(".")[0]}.flac'
+    wav_folder_name = os.path.split(wav_paths[0])[-1]
 
-        # Split audio
-        returned_path = os.system(f"ffmpeg -loglevel error -i {src_wav_path} -f segment -segment_times {split_time} {dest_path}_%02d.flac")
+    src_wav_path = os.path.join(root_wav_path, wav_folder_name, wav_file_name) # remove aligned and replace file extension
 
-        # Split text
-        sentences = [[word.text for word in textgrid_words[:word_index]], [word.text for word in textgrid_words[word_index:]]]
-        for sentence in sentences:
-            with open(f'{dest_path}_%03d.txt', 'w') as file:
-                file.write(' '.join(sentence))
+    # create destinaltion path
+    processed_path = os.path.join(f'{root_wav_path}_split', wav_folder_name)
+    os.makedirs(processed_path, exist_ok=True)
+    dest_path = os.path.join(processed_path, f"{wav_file_name}")
+
+    # Split audio
+    os.system(f"ffmpeg -loglevel error -i {src_wav_path} -f segment -segment_times {split_time} {dest_path}_%02d.flac")
+
+    # Split text
+    sentences = [[word.text for word in textgrid_words[:word_index]], [word.text for word in textgrid_words[word_index:]]]
+    for index, sentence in enumerate(sentences):
+        with open(f'{dest_path}_{index:02}.txt', 'w') as file:
+            file.write(' '.join(sentence))
 
 def convert_all_to_wav(df):
     threads= []
@@ -110,8 +119,8 @@ if __name__ == '__main__':
     df = pd.read_csv('/home/knoriy/Documents/laion/split_peoples_speech/subset.tsv', names=["audio_filepath","duration", "shard_id", "text"], header=None, sep="\t")[:100]
     base_pps_dataset_path = '/home/knoriy/Documents/laion/split_peoples_speech/subset'
 
-    save_all_text_to_file(df)
-    convert_all_to_wav(df)
+    # save_all_text_to_file(df)
+    # convert_all_to_wav(df)
 
     # generate_textgrids(base_pps_dataset_path)
-    # split_audio('/home/knoriy/Documents/laion/split_peoples_speech/subset_textgrids', base_pps_dataset_path)
+    split_audio('/home/knoriy/Documents/laion/split_peoples_speech/subset_textgrids', base_pps_dataset_path)
