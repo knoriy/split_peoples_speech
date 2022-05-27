@@ -122,5 +122,4 @@ if __name__ == '__main__':
     # convert_all_to_wav(df)
 
     # generate_textgrids(base_pps_dataset_path)
-    # split_audio('/home/knoriy/Documents/laion/split_peoples_speech/subset_textgrids', base_pps_dataset_path)
     split_all_audiofiles('/home/knoriy/Documents/laion/split_peoples_speech/subset_textgrids', base_pps_dataset_path)
