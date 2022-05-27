@@ -7,14 +7,15 @@ import pandas as pd
 from utils import flac_to_wav, generate_txt
 
 
+# Generate TextGrid alignments
 def generate_alignments(src, dest, overwrite=True):
     # if os.path.exists(dest): raise Warning("Desitination Folder already exists")
-    os.system(f'mfa align --verbose False --clean {src} english english {dest}')
+    os.system(f'mfa align --clean {src} english english {dest}')
 
 def generate_textgrids(dataset_root_path):
     generate_alignments(dataset_root_path, f"{dataset_root_path}_textgrids")
 
-
+# Split audio into 5-10 seconds
 def get_potential_splits(textgrid_words):
 
     potential_split_points = []
@@ -50,7 +51,9 @@ def split_audio(root_textgrid_path, root_wav_path):
 
     for path in tqdm.tqdm(textgrid_paths, desc='spliting flac files into 5-10 seconds'):
         textgrid = textgrids.TextGrid(path)
-        split_time = get_longest_silance(textgrid.get('words'))[1]
+        textgrid_words = textgrid.get('words')
+
+        word_index, split_time = get_longest_silance(textgrid_words)
 
         # get src path
         wav_paths = os.path.split(path)
@@ -62,27 +65,28 @@ def split_audio(root_textgrid_path, root_wav_path):
         # create destinaltion path
         processed_path = os.path.join(f'{root_wav_path}_split', wav_folder_name)
         os.makedirs(processed_path, exist_ok=True)
-        dest_path = os.path.join(processed_path, f"{wav_file_name}_%03d.flac")
+        dest_path = os.path.join(processed_path, f"{wav_file_name}")
 
         # Split audio
-        os.system(f"ffmpeg -nostats -loglevel 0 -i {src_wav_path} -f segment -segment_times {split_time} {dest_path}")
+        returned_path = os.system(f"ffmpeg -i {src_wav_path} -f segment -segment_times {split_time} {dest_path}_%02d.flac")
+
+        # Split text
+        sentences = [[word.text for word in textgrid_words[:word_index]], [word.text for word in textgrid_words[word_index:]]]
+        for sentence in sentences:
+            with open(f'{dest_path}_%03d.txt', 'w') as file:
+                file.write(' '.join(sentence))
 
 
-
-def main():
+if __name__ == '__main__':
     df = pd.read_csv('/home/knoriy/Documents/laion/split_peoples_speech/subset.tsv', names=["audio_filepath","duration", "shard_id", "text"], header=None, sep="\t")
     base_pps_dataset_path = '/home/knoriy/Documents/laion/split_peoples_speech/subset'
 
     # generate_txt(df)
 
-    for row in tqdm.tqdm(df.iloc, desc="Converting .flac files to .wav"):
-        flac_path = os.path.join(base_pps_dataset_path, f'{row["audio_filepath"]}')
-        wav_path = os.path.join(base_pps_dataset_path, f'{row["audio_filepath"].split(".")[0]}.wav')
-        flac_to_wav(flac_path, wav_path, overwrite=True, no_log=False)
+    # for row in tqdm.tqdm(df.iloc, desc="Converting .flac files to .wav"):
+    #     flac_path = os.path.join(base_pps_dataset_path, f'{row["audio_filepath"]}')
+    #     wav_path = os.path.join(base_pps_dataset_path, f'{row["audio_filepath"].split(".")[0]}.wav')
+    #     flac_to_wav(flac_path, wav_path, overwrite=True, no_log=False)
 
-    generate_textgrids(base_pps_dataset_path)
+    # generate_textgrids(base_pps_dataset_path)
     split_audio('/home/knoriy/Documents/laion/split_peoples_speech/subset_textgrids', base_pps_dataset_path)
-
-
-if __name__ == '__main__':
-    main()
