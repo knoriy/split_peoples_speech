@@ -5,7 +5,7 @@ import pandas as pd
 import glob
 
 
-def get_subset_df(json_dir=None):
+def get_subset_df(dataset_root_path, json_dir=None):
     if not json_dir:
         json_dir = '/home/knoriy/Documents/laion/split_peoples_speech/flac_train_manifest.jsonl'
 
@@ -18,7 +18,7 @@ def get_subset_df(json_dir=None):
     for keys in df[0][0].keys():
         df[keys] = [path[0][keys] for path in df.iloc()]
 
-    subset = glob.glob('/home/knoriy/Documents/laion/split_peoples_speech/subset/**/*.flac', recursive=True)
+    subset = glob.glob(dataset_root_path, recursive=True)
     subset = [os.path.join(*(dir.split(os.path.sep)[7:])) for dir in subset]
 
     subset_df = df[df['audio_filepath'].isin(subset)].reset_index(drop=True)
