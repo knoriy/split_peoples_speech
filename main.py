@@ -115,7 +115,6 @@ if __name__ == '__main__':
     from utils import generate_txt, get_subset_df
 
     import warnings
-    import fsspec
 
     filename = '/home/knoriy/Documents/laion/split_peoples_speech/mini_subset.tar.xz'
     root_path = '/home/knoriy/Documents/laion/split_peoples_speech/'
@@ -124,53 +123,35 @@ if __name__ == '__main__':
     chunk = 15
 
 
-    openfile = fsspec.open('s3://s-laion/peoples_speech/mini_subset.tar.xz')
+    with tarfile.open(filename,'r') as file_obj:
+        file_names_full_list = file_obj.getnames()
+        file_names_full_list = [i for i in file_names_full_list if '.flac' in i]
 
-    with openfile as f:
-        with tarfile.open(fileobj=f, mode='r') as file_obj:
-            file_names_full_list = file_obj.getnames()
-            file_names_full_list = [i for i in file_names_full_list if '.flac' in i]
+        for i in range(0, len(file_names_full_list), chunk):
+            for file_name in file_names_full_list[i:i + chunk]:
+                file_obj.extract(file_name, './')
 
-            for i in range(0, len(file_names_full_list), chunk):
-                for file_name in file_names_full_list[i:i + chunk]:
-                    file_obj.extract(file_name, './')
+            generate_subset_tsv = True
+            if generate_subset_tsv == True:
+                df = get_subset_df('/home/knoriy/Documents/laion/split_peoples_speech/mini_subset/**/*.flac')#.to_csv(f'/home/knoriy/Documents/laion/split_peoples_speech/subset_{i}.tsv', sep='\t', header=None, index=False)
+            # print(df)
+            
+            # Save transcript to file
+            save_all_text_to_file(df)
 
-                generate_subset_tsv = True
-                if generate_subset_tsv == True:
-                    df = get_subset_df('/home/knoriy/Documents/laion/split_peoples_speech/mini_subset/**/*.flac')#.to_csv(f'/home/knoriy/Documents/laion/split_peoples_speech/subset_{i}.tsv', sep='\t', header=None, index=False)
-                # print(df)
-                
-                # Save transcript to file
-                save_all_text_to_file(df)
+            # Convert Flac to wav
+            convert_all_to_wav(df, os.path.join(root_path, dataset_name))
 
-                # Convert Flac to wav
-                convert_all_to_wav(df, os.path.join(root_path, dataset_name))
+            # Get audio text alignments and split audio
+            generate_textgrids(os.path.join(root_path, dataset_name))
+            split_all_audiofiles('/home/knoriy/Documents/laion/split_peoples_speech/mini_subset_textgrids', os.path.join(root_path, dataset_name))
+            
+            warnings.warn('Not uploading split file to s3')
 
-                # Get audio text alignments and split audio
-                generate_textgrids(os.path.join(root_path, dataset_name))
-                split_all_audiofiles('/home/knoriy/Documents/laion/split_peoples_speech/mini_subset_textgrids', os.path.join(root_path, dataset_name))
-                
-                warnings.warn('Not uploading split file to s3')
+            y_n = input('continue? y/n: ')
+            if y_n == 'y':
+                pass
 
-                # y_n = input('continue? y/n: ')
-                # if y_n == 'y':
-                #     pass
-
-                shutil.rmtree('/home/knoriy/Documents/laion/split_peoples_speech/mini_subset')
-                # shutil.rmtree('/home/knoriy/Documents/laion/split_peoples_speech/mini_subset_textgrids')
-                shutil.rmtree('/home/knoriy/Documents/laion/split_peoples_speech/mini_subset_split')
-
-
-    # generate_subset_tsv = False
-    # if generate_subset_tsv == True:
-    #     get_subset_df().to_csv('/home/knoriy/Documents/laion/split_peoples_speech/subset.tsv', sep='\t', header=None, index=False)
-
-
-    # df = pd.read_csv('/home/knoriy/Documents/laion/split_peoples_speech/subset.tsv', names=["audio_filepath","duration", "shard_id", "text"], header=None, sep="\t")[:100]
-    # base_pps_dataset_path = '/home/knoriy/Documents/laion/split_peoples_speech/subset'
-
-    # # save_all_text_to_file(df)
-    # # convert_all_to_wav(df)
-
-    # # generate_textgrids(base_pps_dataset_path)
-    # split_all_audiofiles('/home/knoriy/Documents/laion/split_peoples_speech/subset_textgrids', base_pps_dataset_path)
+            shutil.rmtree('/home/knoriy/Documents/laion/split_peoples_speech/mini_subset')
+            shutil.rmtree('/home/knoriy/Documents/laion/split_peoples_speech/mini_subset_textgrids')
+            shutil.rmtree('/home/knoriy/Documents/laion/split_peoples_speech/mini_subset_split')
