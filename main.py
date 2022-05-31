@@ -82,9 +82,6 @@ def convert_all_to_wav(df, base_dataset_path):
             flac_path = os.path.join(base_dataset_path, f'{row["audio_filepath"]}')
             wav_path = os.path.join(base_dataset_path, f'{row["audio_filepath"].split(".")[0]}.wav')
             threads.append(executor.submit(flac_to_wav, flac_path, wav_path, overwrite=True))
-            
-        # for task in as_completed(threads):
-        #     print(task.result()) 
 
 def save_all_text_to_file(df):
     threads= []
@@ -92,9 +89,6 @@ def save_all_text_to_file(df):
     with ThreadPoolExecutor(max_workers=12) as executor:
         for row in tqdm.tqdm(df.iloc, desc="Generating .txt files for MFA"):
             threads.append(executor.submit(generate_txt, f'./mini_subset/{row["audio_filepath"].split(".")[0]}.txt', row["text"]))
-            
-        # for task in as_completed(threads):
-        #     print(task.result()) 
 
 def split_all_audiofiles(root_textgrid_path, root_wav_path):
     threads= []
@@ -104,9 +98,6 @@ def split_all_audiofiles(root_textgrid_path, root_wav_path):
     with ThreadPoolExecutor(max_workers=12) as executor:
         for path in tqdm.tqdm(textgrid_paths, desc='spliting flac files into 5-10 seconds'):
             threads.append(executor.submit(split_audio, path, root_wav_path))
-            
-        # for task in as_completed(threads):
-        #     print(task.result()) 
 
 if __name__ == '__main__':
 
@@ -157,20 +148,5 @@ if __name__ == '__main__':
                 #     pass
 
                 shutil.rmtree('/home/knoriy/Documents/laion/split_peoples_speech/mini_subset')
-                # shutil.rmtree('/home/knoriy/Documents/laion/split_peoples_speech/mini_subset_textgrids')
+                shutil.rmtree('/home/knoriy/Documents/laion/split_peoples_speech/mini_subset_textgrids')
                 shutil.rmtree('/home/knoriy/Documents/laion/split_peoples_speech/mini_subset_split')
-
-
-    # generate_subset_tsv = False
-    # if generate_subset_tsv == True:
-    #     get_subset_df().to_csv('/home/knoriy/Documents/laion/split_peoples_speech/subset.tsv', sep='\t', header=None, index=False)
-
-
-    # df = pd.read_csv('/home/knoriy/Documents/laion/split_peoples_speech/subset.tsv', names=["audio_filepath","duration", "shard_id", "text"], header=None, sep="\t")[:100]
-    # base_pps_dataset_path = '/home/knoriy/Documents/laion/split_peoples_speech/subset'
-
-    # # save_all_text_to_file(df)
-    # # convert_all_to_wav(df)
-
-    # # generate_textgrids(base_pps_dataset_path)
-    # split_all_audiofiles('/home/knoriy/Documents/laion/split_peoples_speech/subset_textgrids', base_pps_dataset_path)
