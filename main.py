@@ -117,8 +117,6 @@ if __name__ == '__main__':
     import fsspec
     from utils import generate_txt, get_subset_df
 
-    import warnings
-
     chunk = 15
 
     root_path = '/home/knoriy/Documents/laion/split_peoples_speech/'
