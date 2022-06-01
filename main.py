@@ -29,7 +29,7 @@ def get_potential_splits(textgrid_words):
 
     return potential_split_points
 
-def get_longest_silance(textgrid_words):
+def get_longest_silence(textgrid_words):
     potential_split_points = get_potential_splits(textgrid_words)
 
     silance_length = 0
@@ -51,7 +51,7 @@ def split_audio(path:str, root_wav_path:str):
     textgrid = textgrids.TextGrid(path)
     textgrid_words = textgrid.get('words')
 
-    word_index, split_time = get_longest_silance(textgrid_words)
+    word_index, split_time = get_longest_silence(textgrid_words)
 
     # get src path
     wav_paths = os.path.split(path)
@@ -82,9 +82,6 @@ def convert_all_to_wav(df, base_dataset_path):
             flac_path = os.path.join(base_dataset_path, f'{row["audio_filepath"]}')
             wav_path = os.path.join(base_dataset_path, f'{row["audio_filepath"].split(".")[0]}.wav')
             threads.append(executor.submit(flac_to_wav, flac_path, wav_path, overwrite=True))
-            
-        # for task in as_completed(threads):
-        #     print(task.result()) 
 
 def save_all_text_to_file(df):
     threads= []
@@ -92,11 +89,8 @@ def save_all_text_to_file(df):
     with ThreadPoolExecutor(max_workers=12) as executor:
         for row in tqdm.tqdm(df.iloc, desc="Generating .txt files for MFA"):
             threads.append(executor.submit(generate_txt, f'./mini_subset/{row["audio_filepath"].split(".")[0]}.txt', row["text"]))
-            
-        # for task in as_completed(threads):
-        #     print(task.result()) 
 
-def split_all_audiofiles(root_textgrid_path, root_wav_path):
+def split_all_audio_files(root_textgrid_path, root_wav_path):
     threads= []
 
     textgrid_paths = glob.glob(f'{root_textgrid_path}/**/*.TextGrid', recursive=True)
@@ -104,54 +98,72 @@ def split_all_audiofiles(root_textgrid_path, root_wav_path):
     with ThreadPoolExecutor(max_workers=12) as executor:
         for path in tqdm.tqdm(textgrid_paths, desc='spliting flac files into 5-10 seconds'):
             threads.append(executor.submit(split_audio, path, root_wav_path))
-            
-        # for task in as_completed(threads):
-        #     print(task.result()) 
+
+def upload_to_s3(split_file, s3_file_obj):
+    s3_file_obj.addfile(split_file)
+
+def upload_all_to_s3(paths:list, s3_file_obj):
+    threads= []
+
+    with ThreadPoolExecutor(max_workers=12) as executor:
+        for path in tqdm.tqdm(paths, desc='spliting flac files into 5-10 seconds'):
+            threads.append(executor.submit(upload_to_s3, path, s3_file_obj))
+
 
 if __name__ == '__main__':
 
     import tarfile
     import shutil
+    import fsspec
     from utils import generate_txt, get_subset_df
 
     import warnings
 
-    filename = '/home/knoriy/Documents/laion/split_peoples_speech/mini_subset.tar.xz'
+    chunk = 15
+
     root_path = '/home/knoriy/Documents/laion/split_peoples_speech/'
     dataset_name = 'mini_subset'
 
-    chunk = 15
+    # init Dirs
+    dataset_root_path = os.path.join(root_path, f'{dataset_name}')
+    dataset_textgrid_path = os.path.join(root_path, f'{dataset_name}_textgrids')
+    dataset_split_path = os.path.join(root_path, f'{dataset_name}_split')
 
 
-    with tarfile.open(filename,'r') as file_obj:
-        file_names_full_list = file_obj.getnames()
-        file_names_full_list = [i for i in file_names_full_list if '.flac' in i]
+    s3_dataset = fsspec.open('s3://s-laion/peoples_speech/mini_subset.tar.xz')
+    s3_dest = fsspec.open('s3://s-laion/peoples_speech/mini_subset.tar.xz')
 
-        for i in range(0, len(file_names_full_list), chunk):
-            for file_name in file_names_full_list[i:i + chunk]:
-                file_obj.extract(file_name, './')
+    with s3_dataset as src_file, s3_dest as dest_file:
+        with tarfile.open(fileobj=src_file, mode='r') as src_file_obj, tarfile.open(fileobj=s3_dest, mode='a') as dest_file_obj:
+            file_names_full_list = src_file_obj.getnames()
+            file_names_full_list = [i for i in file_names_full_list if '.flac' in i]
 
-            generate_subset_tsv = True
-            if generate_subset_tsv == True:
-                df = get_subset_df('/home/knoriy/Documents/laion/split_peoples_speech/mini_subset/**/*.flac')#.to_csv(f'/home/knoriy/Documents/laion/split_peoples_speech/subset_{i}.tsv', sep='\t', header=None, index=False)
-            # print(df)
-            
-            # Save transcript to file
-            save_all_text_to_file(df)
+            for i in range(0, len(file_names_full_list), chunk):
+                for file_name in file_names_full_list[i:i + chunk]:
+                    src_file_obj.extract(file_name, './')
 
-            # Convert Flac to wav
-            convert_all_to_wav(df, os.path.join(root_path, dataset_name))
+                generate_subset_tsv = True
+                if generate_subset_tsv == True:
+                    df = get_subset_df(os.path.join(dataset_root_path, f'/**/*.flac'))
+                
+                # Save transcript to file
+                save_all_text_to_file(df)
 
-            # Get audio text alignments and split audio
-            generate_textgrids(os.path.join(root_path, dataset_name))
-            split_all_audiofiles('/home/knoriy/Documents/laion/split_peoples_speech/mini_subset_textgrids', os.path.join(root_path, dataset_name))
-            
-            warnings.warn('Not uploading split file to s3')
+                # Convert Flac to wav
+                convert_all_to_wav(df, os.path.join(root_path, dataset_name))
 
-            y_n = input('continue? y/n: ')
-            if y_n == 'y':
-                pass
+                # Get audio text alignments and split audio
+                generate_textgrids(os.path.join(root_path, dataset_name))
+                split_all_audio_files(dataset_textgrid_path, os.path.join(root_path, dataset_name))
+                
+                # Upload Split files to s3
+                split_files = glob.glob(os.path.join(dataset_split_path, f'/**/*.*'))
+                upload_all_to_s3(split_files, dest_file_obj)
 
-            shutil.rmtree('/home/knoriy/Documents/laion/split_peoples_speech/mini_subset')
-            shutil.rmtree('/home/knoriy/Documents/laion/split_peoples_speech/mini_subset_textgrids')
-            shutil.rmtree('/home/knoriy/Documents/laion/split_peoples_speech/mini_subset_split')
+                # y_n = input('continue? y/n: ')
+                # if y_n == 'y':
+                #     pass
+
+                shutil.rmtree(dataset_root_path)
+                shutil.rmtree(dataset_textgrid_path)
+                shutil.rmtree(dataset_split_path)
