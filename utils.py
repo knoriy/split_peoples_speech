@@ -6,10 +6,7 @@ import tarfile
 import io
 
 
-def get_subset_df(dataset_root_path:str, json_dir=None):
-    if not json_dir:
-        json_dir = '/home/knoriy/Documents/laion/split_peoples_speech/flac_train_manifest.jsonl'
-
+def get_subset_df(dataset_root_path:str, json_dir:str):
     with open(json_dir, 'r') as json_file:
         json_list = list(json_file)
 
@@ -20,13 +17,12 @@ def get_subset_df(dataset_root_path:str, json_dir=None):
         df[keys] = [path[0][keys] for path in df.iloc()]
 
     subset = glob.glob(dataset_root_path, recursive=True)
-    subset = [os.path.join(*(dir.split(os.path.sep)[7:])) for dir in subset]
+    subset = [os.path.join(*(dir.split(os.path.sep)[5:])) for dir in subset]
 
     subset_df = df[df['audio_filepath'].isin(subset)].reset_index(drop=True)
     subset_df = subset_df.drop(0, axis=1)
 
     return subset_df
-    # get_subset_df().to_csv('/home/knoriy/Documents/laion/split_peoples_speech/subset.tsv', sep='\t', header=None, index=False)
 
 
 def flac_to_wav(audio_in_path, audio_out_path, overwrite=False):

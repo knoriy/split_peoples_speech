@@ -11,7 +11,7 @@ from utils import flac_to_wav, generate_txt, get_subset_df
 # Generate TextGrid alignments
 def generate_alignments(src, dest, overwrite=True):
     # if os.path.exists(dest): raise Warning("Desitination Folder already exists")
-    os.system(f'mfa align --clean {src} english english {dest}')
+    os.system(f'mfa align --clean {src} english_mfa english_mfa {dest}')
 
 def generate_textgrids(dataset_root_path):
     generate_alignments(dataset_root_path, f"{dataset_root_path}_textgrids")
@@ -76,28 +76,34 @@ def split_audio(path:str, root_wav_path:str):
 
 def convert_all_to_wav(df, base_dataset_path):
     threads= []
-
-    with ThreadPoolExecutor(max_workers=12) as executor:
-        for row in tqdm.tqdm(df.iloc, desc="Converting .flac files to .wav"):
-            flac_path = os.path.join(base_dataset_path, f'{row["audio_filepath"]}')
-            wav_path = os.path.join(base_dataset_path, f'{row["audio_filepath"].split(".")[0]}.wav')
-            threads.append(executor.submit(flac_to_wav, flac_path, wav_path, overwrite=True))
+    l = len(df)
+    with tqdm.tqdm(total=l, desc="Converting .flac files to .wav") as pbar:
+        with ThreadPoolExecutor(max_workers=12) as executor:
+            for row in df.iloc:
+                flac_path = os.path.join(base_dataset_path, f'{row["audio_filepath"]}')
+                wav_path = os.path.join(base_dataset_path, f'{row["audio_filepath"].split(".")[0]}.wav')
+                threads.append(executor.submit(flac_to_wav, flac_path, wav_path, overwrite=True))
+            for _ in as_completed(threads):
+                pbar.update(1)
 
 def save_all_text_to_file(df):
-    threads= []
-
-    with ThreadPoolExecutor(max_workers=12) as executor:
-        for row in tqdm.tqdm(df.iloc, desc="Generating .txt files for MFA"):
-            threads.append(executor.submit(generate_txt, f'./mini_subset/{row["audio_filepath"].split(".")[0]}.txt', row["text"]))
+    l = len(df)
+    with tqdm.tqdm(total=l, desc="Generating .txt files for MFA") as pbar:
+        with ThreadPoolExecutor(max_workers=12) as executor:
+            threads = [executor.submit(generate_txt, f'./mini_subset/{row["audio_filepath"].split(".")[0]}.txt', row["text"]) for row in df.iloc]
+            for _ in as_completed(threads):
+                pbar.update(1)
 
 def split_all_audio_files(root_textgrid_path, root_wav_path):
-    threads= []
-
     textgrid_paths = glob.glob(f'{root_textgrid_path}/**/*.TextGrid', recursive=True)
+    l = len(textgrid_paths)
 
-    with ThreadPoolExecutor(max_workers=12) as executor:
-        for path in tqdm.tqdm(textgrid_paths, desc='spliting flac files into 5-10 seconds'):
-            threads.append(executor.submit(split_audio, path, root_wav_path))
+    with tqdm.tqdm(total=l, desc='spliting flac files into 5-10 seconds') as pbar:
+        with ThreadPoolExecutor(max_workers=12) as executor:
+            threads = [executor.submit(split_audio, path, root_wav_path) for path in textgrid_paths]
+            for _ in as_completed(threads):
+                pbar.update(1)
+
 
 if __name__ == '__main__':
 
@@ -107,16 +113,15 @@ if __name__ == '__main__':
     import io
     from utils import generate_txt, get_subset_df, create_dummy_tar
 
-    chunk = 15
+    chunk = 100
 
-    root_path = '/home/knoriy/Documents/laion/split_peoples_speech/'
+    root_path = '/home/knoriy/split_peoples_speech/'
     dataset_name = 'mini_subset'
 
     # init Dirs
     dataset_root_path = os.path.join(root_path, f'{dataset_name}')
     dataset_textgrid_path = os.path.join(root_path, f'{dataset_name}_textgrids')
     dataset_split_path = os.path.join(root_path, f'{dataset_name}_split')
-
 
     s3_dataset = fsspec.open(f's3://s-laion/peoples_speech/{dataset_name}.tar.xz')
     s3_dest = fsspec.filesystem('s3')
@@ -126,13 +131,15 @@ if __name__ == '__main__':
             file_names_full_list = src_file_obj.getnames()
             file_names_full_list = [i for i in file_names_full_list if '.flac' in i]
 
-            for i in range(0, len(file_names_full_list), chunk):
+            print('Total Files found', len(file_names_full_list))
+
+            for i in tqdm.tqdm(range(0, len(file_names_full_list), chunk), desc='Chunks remaining: '):
                 for file_name in file_names_full_list[i:i + chunk]:
                     src_file_obj.extract(file_name, './')
 
                 generate_subset_tsv = True
                 if generate_subset_tsv == True:
-                    df = get_subset_df(os.path.join(dataset_root_path, f'/**/*.flac'))
+                    df = get_subset_df(f'{dataset_root_path}/**/*.flac', os.path.join(root_path, 'flac_train_manifest.jsonl'))
                 
                 # Save transcript to file
                 save_all_text_to_file(df)
@@ -145,11 +152,11 @@ if __name__ == '__main__':
                 split_all_audio_files(dataset_textgrid_path, os.path.join(root_path, dataset_name))
                 
                 # Upload Split files to s3
-                s3_dest.put(dataset_split_path, f's-laion/peoples_speech/{dataset_name}/', recursive=True)
+                s3_dest.put(dataset_split_path, f's-laion/peoples_speech/{dataset_name}_split/', recursive=True)
 
-                # y_n = input('continue? y/n: ')
-                # if y_n == 'y':
-                #     pass
+                y_n = input('continue? y/n: ')
+                if y_n == 'y':
+                    pass
 
                 shutil.rmtree(dataset_root_path)
                 shutil.rmtree(dataset_textgrid_path)
