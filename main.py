@@ -99,17 +99,6 @@ def split_all_audio_files(root_textgrid_path, root_wav_path):
         for path in tqdm.tqdm(textgrid_paths, desc='spliting flac files into 5-10 seconds'):
             threads.append(executor.submit(split_audio, path, root_wav_path))
 
-def upload_to_s3(split_file, s3_file_obj):
-    s3_file_obj.addfile(split_file)
-
-def upload_all_to_s3(paths:list, s3_file_obj):
-    threads= []
-
-    with ThreadPoolExecutor(max_workers=12) as executor:
-        for path in tqdm.tqdm(paths, desc='spliting flac files into 5-10 seconds'):
-            threads.append(executor.submit(upload_to_s3, path, s3_file_obj))
-
-
 if __name__ == '__main__':
 
     import tarfile
