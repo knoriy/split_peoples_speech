@@ -5,7 +5,7 @@ import pandas as pd
 import glob
 
 
-def get_subset_df(dataset_root_path, json_dir=None):
+def get_subset_df(dataset_root_path:str, json_dir=None):
     if not json_dir:
         json_dir = '/home/knoriy/Documents/laion/split_peoples_speech/flac_train_manifest.jsonl'
 
