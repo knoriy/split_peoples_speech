@@ -86,11 +86,11 @@ def convert_all_to_wav(df, base_dataset_path):
             for _ in as_completed(threads):
                 pbar.update(1)
 
-def save_all_text_to_file(df):
+def save_all_text_to_file(df, dataset_name):
     l = len(df)
     with tqdm.tqdm(total=l, desc="Generating .txt files for MFA") as pbar:
         with ThreadPoolExecutor(max_workers=12) as executor:
-            threads = [executor.submit(generate_txt, f'./mini_subset/{row["audio_filepath"].split(".")[0]}.txt', row["text"]) for row in df.iloc]
+            threads = [executor.submit(generate_txt, f'./{dataset_name}/{row["audio_filepath"].split(".")[0]}.txt', row["text"]) for row in df.iloc]
             for _ in as_completed(threads):
                 pbar.update(1)
 
@@ -116,14 +116,14 @@ if __name__ == '__main__':
     chunk = 100
 
     root_path = '/home/knoriy/split_peoples_speech/'
-    dataset_name = 'subset_flac'
+    dataset_name = 'subset'
 
     # init Dirs
     dataset_root_path = os.path.join(root_path, f'{dataset_name}')
     dataset_textgrid_path = os.path.join(root_path, f'{dataset_name}_textgrids')
     dataset_split_path = os.path.join(root_path, f'{dataset_name}_split')
 
-    s3_dataset = fsspec.open(f's3://s-laion/peoples_speech/{dataset_name}.tar')
+    s3_dataset = fsspec.open(f's3://s-laion/peoples_speech/{dataset_name}_flac.tar')
     s3_dest = fsspec.filesystem('s3')
 
     with s3_dataset as src_file:

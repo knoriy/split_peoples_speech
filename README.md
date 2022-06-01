@@ -31,7 +31,7 @@ pip install pandas praat-textgrids
 You can find the link for the full dataset [here.](https://mlcommons.org/en/peoples-speech/)
 
 ``` bash
-nohup sh -c "wget <URL> -O - | aws s3 cp - s3://<S#_bucket>" &
+nohup sh -c "wget <URL> -O - | aws s3 cp - s3://<s3_bucket>" &
 
 wget https://storage.googleapis.com/example_download_data/flac_train_manifest.jsonl # Download maifest
 wget https://storage.googleapis.com/example_download_data/subset_flac.tar  # download peoples speech subset
