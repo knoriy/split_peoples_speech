@@ -29,7 +29,7 @@ def get_potential_splits(textgrid_words):
 
     return potential_split_points
 
-def get_longest_silance(textgrid_words):
+def get_longest_silence(textgrid_words):
     potential_split_points = get_potential_splits(textgrid_words)
 
     silance_length = 0
@@ -51,7 +51,7 @@ def split_audio(path:str, root_wav_path:str):
     textgrid = textgrids.TextGrid(path)
     textgrid_words = textgrid.get('words')
 
-    word_index, split_time = get_longest_silance(textgrid_words)
+    word_index, split_time = get_longest_silence(textgrid_words)
 
     # get src path
     wav_paths = os.path.split(path)
@@ -90,7 +90,7 @@ def save_all_text_to_file(df):
         for row in tqdm.tqdm(df.iloc, desc="Generating .txt files for MFA"):
             threads.append(executor.submit(generate_txt, f'./mini_subset/{row["audio_filepath"].split(".")[0]}.txt', row["text"]))
 
-def split_all_audiofiles(root_textgrid_path, root_wav_path):
+def split_all_audio_files(root_textgrid_path, root_wav_path):
     threads= []
 
     textgrid_paths = glob.glob(f'{root_textgrid_path}/**/*.TextGrid', recursive=True)
@@ -108,18 +108,22 @@ if __name__ == '__main__':
     import warnings
     import fsspec
 
-    filename = '/home/knoriy/Documents/laion/split_peoples_speech/mini_subset.tar.xz'
+    chunk = 15
+
     root_path = '/home/knoriy/Documents/laion/split_peoples_speech/'
     dataset_name = 'mini_subset'
 
-    chunk = 15
+    # init Dirs
+    dataset_root_path = os.path.join(root_path, f'{dataset_name}')
+    dataset_textgrid_path = os.path.join(root_path, f'{dataset_name}_textgrids')
+    dataset_split_path = os.path.join(root_path, f'{dataset_name}_split')
 
 
     s3_dataset = fsspec.open('s3://s-laion/peoples_speech/mini_subset.tar.xz')
     s3_dest = fsspec.open('s3://s-laion/peoples_speech/mini_subset.tar.xz')
 
     with s3_dataset as src_file, s3_dest as dest_file:
-        with tarfile.open(fileobj=src_file, mode='r') as src_file_obj, tarfile.open(fileobj=src_file, mode='r') as src_file_obj:
+        with tarfile.open(fileobj=src_file, mode='r') as src_file_obj, tarfile.open(fileobj=s3_dest, mode='a') as dest_file_obj:
             file_names_full_list = src_file_obj.getnames()
             file_names_full_list = [i for i in file_names_full_list if '.flac' in i]
 
@@ -129,7 +133,7 @@ if __name__ == '__main__':
 
                 generate_subset_tsv = True
                 if generate_subset_tsv == True:
-                    df = get_subset_df('/home/knoriy/Documents/laion/split_peoples_speech/mini_subset/**/*.flac')
+                    df = get_subset_df(os.path.join(dataset_root_path, f'/**/*.flac'))
                 
                 # Save transcript to file
                 save_all_text_to_file(df)
@@ -139,18 +143,17 @@ if __name__ == '__main__':
 
                 # Get audio text alignments and split audio
                 generate_textgrids(os.path.join(root_path, dataset_name))
-                split_all_audiofiles('/home/knoriy/Documents/laion/split_peoples_speech/mini_subset_textgrids', os.path.join(root_path, dataset_name))
+                split_all_audio_files(dataset_textgrid_path, os.path.join(root_path, dataset_name))
                 
                 warnings.warn('Not uploading split file to s3')
-                split_files = glob.glob('/home/knoriy/Documents/laion/split_peoples_speech/mini_subset_textgrids/**/*.*')
-
+                split_files = glob.glob(os.path.join(dataset_split_path, f'/**/*.*'))
                 for split_file in split_files:
-                    src_file_obj.addfile(split_file)
+                    dest_file_obj.addfile(split_file)
 
                 # y_n = input('continue? y/n: ')
                 # if y_n == 'y':
                 #     pass
 
-                shutil.rmtree('/home/knoriy/Documents/laion/split_peoples_speech/mini_subset')
-                shutil.rmtree('/home/knoriy/Documents/laion/split_peoples_speech/mini_subset_textgrids')
-                shutil.rmtree('/home/knoriy/Documents/laion/split_peoples_speech/mini_subset_split')
+                shutil.rmtree(dataset_root_path)
+                shutil.rmtree(dataset_textgrid_path)
+                shutil.rmtree(dataset_split_path)
