@@ -86,11 +86,11 @@ def convert_all_to_wav(df, base_dataset_path):
             for _ in as_completed(threads):
                 pbar.update(1)
 
-def save_all_text_to_file(df):
+def save_all_text_to_file(df, dataset_name):
     l = len(df)
     with tqdm.tqdm(total=l, desc="Generating .txt files for MFA") as pbar:
         with ThreadPoolExecutor(max_workers=12) as executor:
-            threads = [executor.submit(generate_txt, f'./mini_subset/{row["audio_filepath"].split(".")[0]}.txt', row["text"]) for row in df.iloc]
+            threads = [executor.submit(generate_txt, f'./{dataset_name}/{row["audio_filepath"].split(".")[0]}.txt', row["text"]) for row in df.iloc]
             for _ in as_completed(threads):
                 pbar.update(1)
 
@@ -116,7 +116,6 @@ if __name__ == '__main__':
     chunk = 100
 
     root_path = '/home/knoriy/split_peoples_speech/'
-    dataset_name = 'mini_subset'
     dataset_name = 'subset'
 
 
@@ -144,7 +143,7 @@ if __name__ == '__main__':
                 df = get_subset_df(f'{dataset_root_path}/**/*.flac', os.path.join(root_path, 'flac_train_manifest.jsonl'))
 
             # Save transcript to file
-            save_all_text_to_file(df)
+            save_all_text_to_file(df, dataset_name)
 
             # Convert Flac to wav
             convert_all_to_wav(df, os.path.join(root_path, dataset_name))
@@ -153,13 +152,10 @@ if __name__ == '__main__':
             generate_textgrids(os.path.join(root_path, dataset_name))
             split_all_audio_files(dataset_textgrid_path, dataset_root_path)
             
-            y_n = input('continue? y/n: ')
-            if y_n == 'y':
-                exit()
+
             # Upload Split files to s3
             s3_dest.put(dataset_split_path, f's-laion/peoples_speech/{dataset_name}_split/', recursive=True)
 
             shutil.rmtree(dataset_root_path)
             shutil.rmtree(dataset_textgrid_path)
             shutil.rmtree(dataset_split_path)
-
