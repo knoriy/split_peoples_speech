@@ -115,16 +115,17 @@ if __name__ == '__main__':
     chunk = 15
 
 
-    openfile = fsspec.open('s3://s-laion/peoples_speech/mini_subset.tar.xz')
+    s3_dataset = fsspec.open('s3://s-laion/peoples_speech/mini_subset.tar.xz')
+    s3_dest = fsspec.open('s3://s-laion/peoples_speech/mini_subset.tar.xz')
 
-    with openfile as f:
-        with tarfile.open(fileobj=f, mode='r') as file_obj:
-            file_names_full_list = file_obj.getnames()
+    with s3_dataset as src_file, s3_dest as dest_file:
+        with tarfile.open(fileobj=src_file, mode='r') as src_file_obj, tarfile.open(fileobj=src_file, mode='r') as src_file_obj:
+            file_names_full_list = src_file_obj.getnames()
             file_names_full_list = [i for i in file_names_full_list if '.flac' in i]
 
             for i in range(0, len(file_names_full_list), chunk):
                 for file_name in file_names_full_list[i:i + chunk]:
-                    file_obj.extract(file_name, './')
+                    src_file_obj.extract(file_name, './')
 
                 generate_subset_tsv = True
                 if generate_subset_tsv == True:
@@ -141,6 +142,10 @@ if __name__ == '__main__':
                 split_all_audiofiles('/home/knoriy/Documents/laion/split_peoples_speech/mini_subset_textgrids', os.path.join(root_path, dataset_name))
                 
                 warnings.warn('Not uploading split file to s3')
+                split_files = glob.glob('/home/knoriy/Documents/laion/split_peoples_speech/mini_subset_textgrids/**/*.*')
+
+                for split_file in split_files:
+                    src_file_obj.addfile(split_file)
 
                 # y_n = input('continue? y/n: ')
                 # if y_n == 'y':

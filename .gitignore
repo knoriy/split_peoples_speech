@@ -135,3 +135,4 @@ subset_textgrids
 flac_train_manifest.jsonl
 subset.tsv
 mini_subset*
+test
