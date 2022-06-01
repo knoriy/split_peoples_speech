@@ -116,18 +116,20 @@ if __name__ == '__main__':
     chunk = 100
 
     root_path = '/home/knoriy/split_peoples_speech/'
-    dataset_name = 'mini_subset'
+    dataset_name = 'subset_flac'
 
     # init Dirs
     dataset_root_path = os.path.join(root_path, f'{dataset_name}')
     dataset_textgrid_path = os.path.join(root_path, f'{dataset_name}_textgrids')
     dataset_split_path = os.path.join(root_path, f'{dataset_name}_split')
 
-    s3_dataset = fsspec.open(f's3://s-laion/peoples_speech/{dataset_name}.tar.xz')
+    s3_dataset = fsspec.open(f's3://s-laion/peoples_speech/{dataset_name}.tar')
     s3_dest = fsspec.filesystem('s3')
 
     with s3_dataset as src_file:
         with tarfile.open(fileobj=src_file, mode='r') as src_file_obj:
+            print('opening file: This may take some time\n')
+
             file_names_full_list = src_file_obj.getnames()
             file_names_full_list = [i for i in file_names_full_list if '.flac' in i]
 
@@ -154,10 +156,10 @@ if __name__ == '__main__':
                 # Upload Split files to s3
                 s3_dest.put(dataset_split_path, f's-laion/peoples_speech/{dataset_name}_split/', recursive=True)
 
-                y_n = input('continue? y/n: ')
-                if y_n == 'y':
-                    pass
-
                 shutil.rmtree(dataset_root_path)
                 shutil.rmtree(dataset_textgrid_path)
                 shutil.rmtree(dataset_split_path)
+
+            y_n = input('continue? y/n: ')
+            if y_n == 'y':
+                exit()
