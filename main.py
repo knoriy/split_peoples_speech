@@ -130,15 +130,10 @@ if __name__ == '__main__':
 
 
     s3_dataset = fsspec.open(f's3://s-laion/peoples_speech/{dataset_name}.tar.xz')
-    try:
-        s3_dest = fsspec.open(f's3://s-laion/peoples_speech/split_{dataset_name}.tar')
-    except FileNotFoundError:
-        create_dummy_tar(os.path.join(root_path))
-        s3_dest = fsspec.open(f's3://s-laion/peoples_speech/split_{dataset_name}.tar')
+    s3_dest = fsspec.filesystem('s3')
 
-
-    with s3_dataset as src_file, s3_dest as dest_file:
-        with tarfile.open(fileobj=src_file, mode='r') as src_file_obj, tarfile.open(fileobj=s3_dest, mode='a') as dest_file_obj:
+    with s3_dataset as src_file:
+        with tarfile.open(fileobj=src_file, mode='r') as src_file_obj:
             file_names_full_list = src_file_obj.getnames()
             file_names_full_list = [i for i in file_names_full_list if '.flac' in i]
 
@@ -161,8 +156,7 @@ if __name__ == '__main__':
                 split_all_audio_files(dataset_textgrid_path, os.path.join(root_path, dataset_name))
                 
                 # Upload Split files to s3
-                split_files = glob.glob(os.path.join(dataset_split_path, f'/**/*.*'))
-                upload_all_to_s3(split_files, dest_file_obj)
+                s3_dest.put(dataset_split_path, f's-laion/peoples_speech/{dataset_name}/', recursive=True)
 
                 # y_n = input('continue? y/n: ')
                 # if y_n == 'y':
