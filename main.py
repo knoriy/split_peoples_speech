@@ -116,7 +116,9 @@ if __name__ == '__main__':
     chunk = 100
 
     root_path = '/home/knoriy/split_peoples_speech/'
-    dataset_name = 'subset_flac'
+    dataset_name = 'mini_subset'
+    dataset_name = 'subset'
+
 
     # init Dirs
     dataset_root_path = os.path.join(root_path, f'{dataset_name}')
@@ -125,7 +127,7 @@ if __name__ == '__main__':
 
     s3_dest = fsspec.filesystem('s3')
 
-    with tarfile.open('/opt/knoriy/subset_flac.tar', mode='r') as src_file_obj:
+    with tarfile.open(f'/opt/knoriy/{dataset_name}_flac.tar', mode='r') as src_file_obj:
         print('opening file: This may take some time\n')
 
         file_names_full_list = src_file_obj.getnames()
@@ -140,7 +142,7 @@ if __name__ == '__main__':
             generate_subset_tsv = True
             if generate_subset_tsv == True:
                 df = get_subset_df(f'{dataset_root_path}/**/*.flac', os.path.join(root_path, 'flac_train_manifest.jsonl'))
-            
+
             # Save transcript to file
             save_all_text_to_file(df)
 
@@ -149,7 +151,7 @@ if __name__ == '__main__':
 
             # Get audio text alignments and split audio
             generate_textgrids(os.path.join(root_path, dataset_name))
-            split_all_audio_files(dataset_textgrid_path, os.path.join(root_path, dataset_name))
+            split_all_audio_files(dataset_textgrid_path, dataset_root_path)
             
             y_n = input('continue? y/n: ')
             if y_n == 'y':
