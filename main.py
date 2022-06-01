@@ -115,7 +115,8 @@ if __name__ == '__main__':
     import tarfile
     import shutil
     import fsspec
-    from utils import generate_txt, get_subset_df
+    import io
+    from utils import generate_txt, get_subset_df, create_dummy_tar
 
     chunk = 15
 
@@ -128,8 +129,13 @@ if __name__ == '__main__':
     dataset_split_path = os.path.join(root_path, f'{dataset_name}_split')
 
 
-    s3_dataset = fsspec.open('s3://s-laion/peoples_speech/mini_subset.tar.xz')
-    s3_dest = fsspec.open('s3://s-laion/peoples_speech/mini_subset.tar.xz')
+    s3_dataset = fsspec.open(f's3://s-laion/peoples_speech/{dataset_name}.tar.xz')
+    try:
+        s3_dest = fsspec.open(f's3://s-laion/peoples_speech/split_{dataset_name}.tar')
+    except FileNotFoundError:
+        create_dummy_tar(os.path.join(root_path))
+        s3_dest = fsspec.open(f's3://s-laion/peoples_speech/split_{dataset_name}.tar')
+
 
     with s3_dataset as src_file, s3_dest as dest_file:
         with tarfile.open(fileobj=src_file, mode='r') as src_file_obj, tarfile.open(fileobj=s3_dest, mode='a') as dest_file_obj:

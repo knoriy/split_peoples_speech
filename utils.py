@@ -1,8 +1,9 @@
 import os
-import tqdm
 import ast
 import pandas as pd
 import glob
+import tarfile
+import io
 
 
 def get_subset_df(dataset_root_path:str, json_dir=None):
@@ -38,3 +39,10 @@ def flac_to_wav(audio_in_path, audio_out_path, overwrite=False):
 def generate_txt(dir:str, text:str):
     with open(dir, 'w') as file:
         file.write(text)
+
+def create_dummy_tar(dir:str):
+    with tarfile.open(dir, mode='w') as src_file_obj:
+        data = ' '.encode('utf-8')
+        info = tarfile.TarInfo(name='foo.txt')
+        info.size = len(data)
+        src_file_obj.addfile(info, io.BytesIO(data))
