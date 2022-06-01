@@ -128,8 +128,7 @@ if __name__ == '__main__':
 
                 generate_subset_tsv = True
                 if generate_subset_tsv == True:
-                    df = get_subset_df('/home/knoriy/Documents/laion/split_peoples_speech/mini_subset/**/*.flac')#.to_csv(f'/home/knoriy/Documents/laion/split_peoples_speech/subset_{i}.tsv', sep='\t', header=None, index=False)
-                # print(df)
+                    df = get_subset_df('/home/knoriy/Documents/laion/split_peoples_speech/mini_subset/**/*.flac')
                 
                 # Save transcript to file
                 save_all_text_to_file(df)
