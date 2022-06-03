@@ -118,6 +118,8 @@ if __name__ == '__main__':
     root_path = '/home/knoriy/split_peoples_speech/'
     dataset_name = 'subset'
 
+    metadata_dir = "/mnt/knoriy/metadata.json"
+    tar_dir = "/mnt/knoriy/pps_train.tar"
 
     # init Dirs
     dataset_root_path = os.path.join(root_path, f'{dataset_name}')
@@ -126,7 +128,7 @@ if __name__ == '__main__':
 
     s3_dest = fsspec.filesystem('s3')
 
-    with tarfile.open(f'/opt/knoriy/{dataset_name}_flac.tar', mode='r') as src_file_obj:
+    with tarfile.open(tar_dir, mode='r') as src_file_obj:
         print('opening file: This may take some time\n')
 
         file_names_full_list = src_file_obj.getnames()
@@ -140,7 +142,7 @@ if __name__ == '__main__':
 
             generate_subset_tsv = True
             if generate_subset_tsv == True:
-                df = get_subset_df(f'{dataset_root_path}/**/*.flac', os.path.join(root_path, 'flac_train_manifest.jsonl'))
+                df = get_subset_df(f'{dataset_root_path}/**/*.flac', metadata_dir)
 
             # Save transcript to file
             save_all_text_to_file(df, dataset_name)
