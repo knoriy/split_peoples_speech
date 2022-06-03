@@ -23,7 +23,7 @@ mfa models download dictionary english_mfa
 ### Install dependencies
 
 ```Shell
-pip install pandas praat-textgrids
+pip install praat-textgrids
 ```
 
 ## Download dataset
