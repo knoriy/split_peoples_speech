@@ -65,6 +65,7 @@ Dataset_root
 
 - [X] Save transcript along with audio
 - [X] Multithread all passes
+- [ ] Split large tar and json into smaller files
 - [ ] checks to avoid processing samples twice
 - [ ] checks to avoid processing samples twice
 - [ ] Test with other languages

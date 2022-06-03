@@ -116,7 +116,7 @@ if __name__ == '__main__':
     chunk = 100
 
     root_path = '/home/knoriy/split_peoples_speech/'
-    dataset_name = 'subset'
+    dataset_name = 'pps_train'
 
     metadata_dir = "/mnt/knoriy/metadata.json"
     tar_dir = "/mnt/knoriy/pps_train.tar"
@@ -138,7 +138,7 @@ if __name__ == '__main__':
 
         for i in tqdm.tqdm(range(0, len(file_names_full_list), chunk), desc='Chunks remaining: '):
             for file_name in file_names_full_list[i:i + chunk]:
-                src_file_obj.extract(file_name, './')
+                src_file_obj.extract(file_name, f'./{dataset_name}/')
 
             generate_subset_tsv = True
             if generate_subset_tsv == True:

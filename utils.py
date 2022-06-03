@@ -19,7 +19,7 @@ def get_subset_df(dataset_root_path:str, json_dir:str):
     subset = glob.glob(dataset_root_path, recursive=True)
     subset = [os.path.join(*(dir.split(os.path.sep)[5:])) for dir in subset]
 
-    subset_df = df[df['audio_filepath'].isin(subset)].reset_index(drop=True)
+    subset_df = df[df['name'].isin(subset)].reset_index(drop=True)
     subset_df = subset_df.drop(0, axis=1)
 
     return subset_df
