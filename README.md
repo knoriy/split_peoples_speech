@@ -9,7 +9,7 @@ Install Montreal Forced Aligner (MFA). For more information about MFA please vis
 ``` bash
 conda create -n aligner -c conda-forge -y montreal-forced-aligner
 conda activate aligner
-conda install pandas praat-textgrids
+conda install --file requirements.txt
 
 ```
 
