@@ -35,7 +35,7 @@ def genorate_pps_df(json_dir:str):
             labels.append(l)
             names.append(n)
     
-    subset_df['audio_path'] = names
+    subset_df['audio_filepath'] = names
     subset_df['text'] = labels
 
     return subset_df

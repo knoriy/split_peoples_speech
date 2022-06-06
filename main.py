@@ -77,7 +77,7 @@ def convert_all_to_wav(df, base_dataset_path, max_workers=96):
     threads= []
     l = len(df)
     with tqdm.tqdm(total=l, desc="Converting .flac files to .wav") as pbar:
-        with ThreadPoolExecutor(max_workers=12) as executor:
+        with ThreadPoolExecutor(max_workers=max_workers) as executor:
             for row in df.iloc:
                 flac_path = os.path.join(base_dataset_path, f'{row["audio_filepath"]}')
                 wav_path = os.path.join(base_dataset_path, f'{row["audio_filepath"].split(".")[0]}.wav')
@@ -88,7 +88,7 @@ def convert_all_to_wav(df, base_dataset_path, max_workers=96):
 def save_all_text_to_file(df, dataset_name, max_workers=96):
     l = len(df)
     with tqdm.tqdm(total=l, desc="Generating .txt files for MFA") as pbar:
-        with ThreadPoolExecutor(max_workers=12) as executor:
+        with ThreadPoolExecutor(max_workers=max_workers) as executor:
             threads = [executor.submit(generate_txt, f'./{dataset_name}/{row["audio_filepath"].split(".")[0]}.txt', row["text"]) for row in df.iloc]
             for _ in as_completed(threads):
                 pbar.update(1)
@@ -98,7 +98,7 @@ def split_all_audio_files(root_textgrid_path, root_wav_path, max_workers=96):
     l = len(textgrid_paths)
 
     with tqdm.tqdm(total=l, desc='spliting flac files into 5-10 seconds') as pbar:
-        with ThreadPoolExecutor(max_workers=12) as executor:
+        with ThreadPoolExecutor(max_workers=max_workers) as executor:
             threads = [executor.submit(split_audio, path, root_wav_path) for path in textgrid_paths]
             for _ in as_completed(threads):
                 pbar.update(1)
