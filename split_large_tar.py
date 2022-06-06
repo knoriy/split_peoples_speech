@@ -26,7 +26,7 @@ def split_large_tar(src_tar:str, dest_path:str, dataset_name:str, chunk_size:int
                 src_file_obj.extract(file_name, f'./tmp/')
             
             tar_file_path = make_tarfile( './tmp/', os.path.join(dest_path, f'{i}.tar'))
-            s3_dest.put(tar_file_path, f's-laion/peoples_speech/{dataset_name}_tars/{os.path.basename(tar_file_path)}')
+            s3_dest.put(tar_file_path, f's-laion/peoples_speech/{dataset_name}_split_tars/{os.path.basename(tar_file_path)}')
             shutil.rmtree('./tmp/')
             shutil.rmtree(os.path.dirname(tar_file_path))
 
