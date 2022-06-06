@@ -111,7 +111,7 @@ if __name__ == '__main__':
     import fsspec
     from utils import generate_txt, get_subset_df, genorate_pps_df, make_tarfile
 
-    chunk = 1000
+    chunk = 10
     generate_subset_tsv = True
     pps_df_dir = '/home/knoriy/split_peoples_speech/pps_train.tsv'
 
@@ -126,7 +126,9 @@ if __name__ == '__main__':
     dataset_textgrid_path = os.path.join(root_path, f'{dataset_name}_textgrids')
     dataset_split_path = os.path.join(root_path, f'{dataset_name}_split')
 
-    s3_dest = fsspec.filesystem('s3')
+    s3 = fsspec.filesystem('s3')
+    s3_dest = f's-laion/peoples_speech/{dataset_name}_split/'
+
 
     if os.path.isfile(pps_df_dir):
         pps_df = pd.read_csv(pps_df_dir, sep='\t', header=None, names=['audio_filepath', 'text'])
@@ -161,8 +163,9 @@ if __name__ == '__main__':
 
             # Upload Split files to s3
             tar_file_path = make_tarfile(f'{dataset_split_path}', f'{dataset_root_path}/{i}.tar')
-            s3_dest.put(tar_file_path, f's-laion/peoples_speech/{dataset_name}_split/')
+            s3.put(tar_file_path, s3_dest)
+            print('File Uploaded to: ', os.path.join(s3_dest, os.path.basename(tar_file_path)))
 
             shutil.rmtree(dataset_root_path)
             shutil.rmtree(dataset_textgrid_path)
-            shutil.rmtree(tar_file_path)
+            shutil.rmtree(dataset_split_path)
