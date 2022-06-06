@@ -75,14 +75,3 @@ def make_tarfile(source_dir, output_filename):
         tar.add(source_dir, arcname=os.path.basename(source_dir))
 
     return output_filename
-
-def split_large_tar(src_tar:str, dest_path:str, chunk_size:int):
-    with tarfile.open(src_tar, mode='r') as src_file_obj:
-        file_names_full_list = src_file_obj.getnames()
-
-        for i in tqdm.tqdm(range(0, len(file_names_full_list), chunk_size), desc='Chunks remaining: '):
-            for file_name in tqdm.tqdm(file_names_full_list[i:i + chunk_size], desc="Extracting Files: "):
-                    src_file_obj.extract(file_name, f'./tmp/')
-            
-            make_tarfile(f'{dest_path}/{i}.tar', './tmp/')
-            shutil.rmtree('./tmp/')
