@@ -43,8 +43,7 @@ def get_subset_df(dataset_root_path:str, df:pd.DataFrame):
     subset = glob.glob(dataset_root_path, recursive=True)
     subset = [os.path.join(*(dir.split(os.path.sep)[5:])) for dir in subset]
 
-    subset_df = df[df['text'].isin(subset)].reset_index(drop=True)
-    subset_df = subset_df.drop(0, axis=1)
+    subset_df = df[df['audio_path'].isin(subset)].reset_index(drop=True)
 
     return subset_df
 

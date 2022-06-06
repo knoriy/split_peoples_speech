@@ -130,7 +130,7 @@ if __name__ == '__main__':
     s3_dest = fsspec.filesystem('s3')
 
     if os.path.isfile(pps_df_dir):
-        pps_df = pd.read_csv(pps_df_dir)
+        pps_df = pd.read_csv(pps_df_dir, sep='\t', header=None, names=['audio_path', 'text'])
     else:
         pps_df = genorate_pps_df(metadata_dir)
         pps_df.to_csv(pps_df_dir, sep='\t', header=None, index=False)
