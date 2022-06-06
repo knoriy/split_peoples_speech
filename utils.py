@@ -5,6 +5,7 @@ import glob
 import tarfile
 import io
 import tqdm
+import shutil 
 
 def genorate_pps_df(json_dir:str):
     with open(json_dir, 'r') as json_file:
@@ -43,7 +44,7 @@ def get_subset_df(dataset_root_path:str, df:pd.DataFrame):
     subset = glob.glob(dataset_root_path, recursive=True)
     subset = [os.path.join(*(dir.split(os.path.sep)[5:])) for dir in subset]
 
-    subset_df = df[df['audio_path'].isin(subset)].reset_index(drop=True)
+    subset_df = df[df['audio_filepath'].isin(subset)].reset_index(drop=True)
 
     return subset_df
 
@@ -65,3 +66,23 @@ def create_dummy_tar(dir:str):
         info = tarfile.TarInfo(name='foo.txt')
         info.size = len(data)
         src_file_obj.addfile(info, io.BytesIO(data))
+
+
+def make_tarfile(source_dir, output_filename):
+    if not os.path.exists(os.path.dirname(output_filename)):
+        os.makedirs(os.path.dirname(output_filename))
+    with tarfile.open(output_filename, "w") as tar:
+        tar.add(source_dir, arcname=os.path.basename(source_dir))
+
+    return output_filename
+
+def split_large_tar(src_tar:str, dest_path:str, chunk_size:int):
+    with tarfile.open(src_tar, mode='r') as src_file_obj:
+        file_names_full_list = src_file_obj.getnames()
+
+        for i in tqdm.tqdm(range(0, len(file_names_full_list), chunk_size), desc='Chunks remaining: '):
+            for file_name in tqdm.tqdm(file_names_full_list[i:i + chunk_size], desc="Extracting Files: "):
+                    src_file_obj.extract(file_name, f'./tmp/')
+            
+            make_tarfile(f'{dest_path}/{i}.tar', './tmp/')
+            shutil.rmtree('./tmp/')

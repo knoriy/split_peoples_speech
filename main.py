@@ -109,10 +109,9 @@ if __name__ == '__main__':
     import tarfile
     import shutil
     import fsspec
-    import io
-    from utils import generate_txt, get_subset_df, genorate_pps_df
+    from utils import generate_txt, get_subset_df, genorate_pps_df, make_tarfile
 
-    chunk = 100
+    chunk = 1000
     generate_subset_tsv = True
     pps_df_dir = '/home/knoriy/split_peoples_speech/pps_train.tsv'
 
@@ -130,7 +129,7 @@ if __name__ == '__main__':
     s3_dest = fsspec.filesystem('s3')
 
     if os.path.isfile(pps_df_dir):
-        pps_df = pd.read_csv(pps_df_dir, sep='\t', header=None, names=['audio_path', 'text'])
+        pps_df = pd.read_csv(pps_df_dir, sep='\t', header=None, names=['audio_filepath', 'text'])
     else:
         pps_df = genorate_pps_df(metadata_dir)
         pps_df.to_csv(pps_df_dir, sep='\t', header=None, index=False)
@@ -144,7 +143,7 @@ if __name__ == '__main__':
         print('Total Files found', len(file_names_full_list))
 
         for i in tqdm.tqdm(range(0, len(file_names_full_list), chunk), desc='Chunks remaining: '):
-            for file_name in file_names_full_list[i:i + chunk]:
+            for file_name in tqdm.tqdm(file_names_full_list[i:i + chunk], desc="Extracting Files: "):
                 src_file_obj.extract(file_name, f'./{dataset_name}/')
 
             if generate_subset_tsv == True:
@@ -160,11 +159,10 @@ if __name__ == '__main__':
             generate_textgrids(os.path.join(root_path, dataset_name))
             split_all_audio_files(dataset_textgrid_path, dataset_root_path)
 
-            break
-
             # Upload Split files to s3
-            s3_dest.put(dataset_split_path, f's-laion/peoples_speech/{dataset_name}_split/', recursive=True)
+            tar_file_path = make_tarfile(f'{dataset_split_path}', f'{dataset_root_path}/{i}.tar')
+            s3_dest.put(tar_file_path, f's-laion/peoples_speech/{dataset_name}_split/')
 
             shutil.rmtree(dataset_root_path)
             shutil.rmtree(dataset_textgrid_path)
-            shutil.rmtree(dataset_split_path)
+            shutil.rmtree(tar_file_path)
