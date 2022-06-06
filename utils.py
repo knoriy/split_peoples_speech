@@ -4,9 +4,9 @@ import pandas as pd
 import glob
 import tarfile
 import io
+import tqdm
 
-
-def get_subset_df(dataset_root_path:str, json_dir:str):
+def genorate_pps_df(json_dir:str):
     with open(json_dir, 'r') as json_file:
         json_list = list(json_file)
 
@@ -15,11 +15,35 @@ def get_subset_df(dataset_root_path:str, json_dir:str):
 
     for keys in df[0][0].keys():
         df[keys] = [path[0][keys] for path in df.iloc()]
+    df = df.drop(0, axis=1)
 
+    df = df[['training_data']] # Keep only columbs that are needed to split
+    for keys in df['training_data'][0].keys():
+        df[keys] = [path[0][keys] for path in df.iloc()]
+    df = df[['label', 'name']] # Keep only columbs that are needed to split
+    #audio_path, duration, shard_id, text
+
+    subset_df = pd.DataFrame()
+
+    labels = []
+    names = []
+
+    for row in tqdm.tqdm(df.iloc(), desc="Cleaning "):
+        label, name = row
+        for l, n in zip(label, name):
+            labels.append(l)
+            names.append(n)
+    
+    subset_df['audio_path'] = names
+    subset_df['text'] = labels
+
+    return subset_df
+
+def get_subset_df(dataset_root_path:str, df:pd.DataFrame):
     subset = glob.glob(dataset_root_path, recursive=True)
     subset = [os.path.join(*(dir.split(os.path.sep)[5:])) for dir in subset]
 
-    subset_df = df[df['name'].isin(subset)].reset_index(drop=True)
+    subset_df = df[df['text'].isin(subset)].reset_index(drop=True)
     subset_df = subset_df.drop(0, axis=1)
 
     return subset_df
