@@ -44,5 +44,5 @@ if __name__ == '__main__':
         src_file, 
         dest_file,
         dataset_name,
-        1000,
+        10,
         s3_dest)

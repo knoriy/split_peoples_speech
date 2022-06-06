@@ -103,6 +103,40 @@ def split_all_audio_files(root_textgrid_path, root_wav_path, max_workers=96):
             for _ in as_completed(threads):
                 pbar.update(1)
 
+def main(src_file):
+    with tarfile.open(fileobj=src_file, mode='r') as src_file_obj:
+        print('opening file: This may take some time\n')
+
+        # file_names_full_list = src_file_obj.getnames()
+        # file_names_full_list = [i for i in file_names_full_list if '.flac' in i]
+
+        # print('Total Files found', len(file_names_full_list))
+
+        # for i in tqdm.tqdm(range(0, len(file_names_full_list), chunk), desc='Chunks remaining: '):
+        #     for file_name in tqdm.tqdm(file_names_full_list[i:i + chunk], desc="Extracting Files: "):
+        #         src_file_obj.extract(file_name, f'./{dataset_name}/')
+
+        #     if generate_subset_tsv == True:
+        #         df = get_subset_df(f'{dataset_root_path}/**/*.flac', pps_df)
+
+        #     # Save transcript to file
+        #     save_all_text_to_file(df, dataset_name)
+
+        #     # Convert Flac to wav
+        #     convert_all_to_wav(df, os.path.join(root_path, dataset_name))
+
+        #     # Get audio text alignments and split audio
+        #     generate_textgrids(os.path.join(root_path, dataset_name))
+        #     split_all_audio_files(dataset_textgrid_path, dataset_root_path)
+
+        #     # Upload Split files to s3
+        #     tar_file_path = make_tarfile(f'{dataset_split_path}', f'{dataset_root_path}/{i}.tar')
+        #     s3.put(tar_file_path, os.path.join(s3_dest, os.path.basename(tar_file_path)))
+        #     print('File Uploaded to: ', os.path.join(s3_dest, os.path.basename(tar_file_path)))
+
+        #     shutil.rmtree(dataset_root_path)
+        #     shutil.rmtree(dataset_textgrid_path)
+        #     shutil.rmtree(dataset_split_path)
 
 if __name__ == '__main__':
 
@@ -112,6 +146,7 @@ if __name__ == '__main__':
     from utils import generate_txt, get_subset_df, genorate_pps_df, make_tarfile
 
     chunk = 1000
+    max_workers = 96
     generate_subset_tsv = True
     pps_df_dir = '/home/knoriy/split_peoples_speech/pps_train.tsv'
 
@@ -126,46 +161,22 @@ if __name__ == '__main__':
     dataset_textgrid_path = os.path.join(root_path, f'{dataset_name}_textgrids')
     dataset_split_path = os.path.join(root_path, f'{dataset_name}_split')
 
+    s3_dataset = fsspec.open(f's3://s-laion/peoples_speech/{dataset_name}_flac.tar')
     s3 = fsspec.filesystem('s3')
     s3_dest = f's-laion/peoples_speech/{dataset_name}_tars/'
-
+    s3_src = f's-laion/peoples_speech/pps_train_tars'
 
     if os.path.isfile(pps_df_dir):
         pps_df = pd.read_csv(pps_df_dir, sep='\t', header=None, names=['audio_filepath', 'text'])
     else:
         pps_df = genorate_pps_df(metadata_dir)
         pps_df.to_csv(pps_df_dir, sep='\t', header=None, index=False)
+    
+    # Thread all batched found on s3
+    s3_files = s3.ls(s3_src)
 
-    with tarfile.open(tar_dir, mode='r') as src_file_obj:
-        print('opening file: This may take some time\n')
-
-        file_names_full_list = src_file_obj.getnames()
-        file_names_full_list = [i for i in file_names_full_list if '.flac' in i]
-
-        print('Total Files found', len(file_names_full_list))
-
-        for i in tqdm.tqdm(range(0, len(file_names_full_list), chunk), desc='Chunks remaining: '):
-            for file_name in tqdm.tqdm(file_names_full_list[i:i + chunk], desc="Extracting Files: "):
-                src_file_obj.extract(file_name, f'./{dataset_name}/')
-
-            if generate_subset_tsv == True:
-                df = get_subset_df(f'{dataset_root_path}/**/*.flac', pps_df)
-
-            # Save transcript to file
-            save_all_text_to_file(df, dataset_name)
-
-            # Convert Flac to wav
-            convert_all_to_wav(df, os.path.join(root_path, dataset_name))
-
-            # Get audio text alignments and split audio
-            generate_textgrids(os.path.join(root_path, dataset_name))
-            split_all_audio_files(dataset_textgrid_path, dataset_root_path)
-
-            # Upload Split files to s3
-            tar_file_path = make_tarfile(f'{dataset_split_path}', f'{dataset_root_path}/{i}.tar')
-            s3.put(tar_file_path, os.path.join(s3_dest, os.path.basename(tar_file_path)))
-            print('File Uploaded to: ', os.path.join(s3_dest, os.path.basename(tar_file_path)))
-
-            shutil.rmtree(dataset_root_path)
-            shutil.rmtree(dataset_textgrid_path)
-            shutil.rmtree(dataset_split_path)
+    with tqdm.tqdm(total=len(s3_files), desc='spliting flac files into 5-10 seconds') as pbar:
+        with ThreadPoolExecutor(max_workers=max_workers) as executor:
+            threads = [executor.submit(main, s3.open(s3_file)) for s3_file in s3_files]
+            for _ in as_completed(threads):
+                pbar.update(1)
