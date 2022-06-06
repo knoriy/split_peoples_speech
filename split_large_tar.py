@@ -23,9 +23,9 @@ def split_large_tar(src_tar:str, dest_path:str, dataset_name:str, chunk_size:int
 
         for i in tqdm.tqdm(range(0, len(file_names_full_list), chunk_size), desc='Chunks remaining: '):
             for file_name in tqdm.tqdm(file_names_full_list[i:i + chunk_size], desc="Extracting Files: "):
-                    src_file_obj.extract(file_name, f'./tmp/')
+                src_file_obj.extract(file_name, f'./tmp/')
             
-            tar_file_path = make_tarfile( './tmp/', f'{dest_path}/{i}.tar')
+            tar_file_path = make_tarfile( './tmp/', os.path.join(dest_path, f'{i}.tar'))
             s3_dest.put(tar_file_path, f's-laion/peoples_speech/{dataset_name}_tars/')
             shutil.rmtree('./tmp/')
             shutil.rmtree(tar_file_path)
