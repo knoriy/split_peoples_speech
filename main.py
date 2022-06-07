@@ -116,7 +116,7 @@ if __name__ == '__main__':
     from utils import generate_txt, get_subset_df, genorate_pps_df, make_tarfile, create_json_list
 
     max_workers = 50
-    chunk = 10
+    chunk = 5000
     generate_subset_tsv = True
     pps_df_dir = '/home/knoriy/split_peoples_speech/pps_train.tsv'
 
@@ -135,7 +135,7 @@ if __name__ == '__main__':
     s3 = fsspec.filesystem('s3')
     s3_dest = f's-laion/peoples_speech/{dataset_name}_tars/'
 
-
+    print('Loading dataframe: This may take some time')
     if os.path.isfile(pps_df_dir):
         pps_df = pd.read_csv(pps_df_dir, sep='\t', header=None, names=['audio_filepath', 'text'])
     else:
