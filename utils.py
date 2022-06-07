@@ -77,10 +77,6 @@ def make_tarfile(source_dir, output_filename):
     return output_filename
 
 def create_json_list(file_path:str, entry):
-    file_path = './sizes.json'
-
-    entry = {'test':1}
-
     if not os.path.isfile(file_path):
         a = []
         a.append(entry)
