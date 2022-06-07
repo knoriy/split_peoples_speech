@@ -63,9 +63,6 @@ Dataset_root
 
 ## TODO
 
-- [X] Save transcript along with audio
-- [X] Multithread all passes
-- [ ] Split large tar and json into smaller files
-- [ ] checks to avoid processing samples twice
-- [ ] checks to avoid processing samples twice
-- [ ] Test with other languages
+- [x] Save json with `{<filename.tar>: <number of samples (int)>}`
+- [X] Save sample with number ids e.g. `0.flac`
+

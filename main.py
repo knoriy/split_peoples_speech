@@ -46,7 +46,7 @@ def get_longest_silence(textgrid_words):
 
     return word_index, time
 
-def split_audio(path:str, root_wav_path:str):
+def split_audio(path:str, root_wav_path:str, index:int=None):
     textgrid = textgrids.TextGrid(path)
     textgrid_words = textgrid.get('words')
 
@@ -62,7 +62,11 @@ def split_audio(path:str, root_wav_path:str):
     # create destinaltion path
     processed_path = os.path.join(f'{root_wav_path}_split', wav_folder_name)
     os.makedirs(processed_path, exist_ok=True)
-    dest_path = os.path.join(processed_path, f"{wav_file_name.split('.')[0]}")
+
+    if index != None:
+        dest_path = os.path.join(processed_path, f"{index}")
+    else:
+        dest_path = os.path.join(processed_path, f"{wav_file_name.split('.')[0]}")
 
     # Split audio
     os.system(f"ffmpeg -loglevel error -i {src_wav_path} -f segment -segment_times {split_time} {dest_path}_%02d.flac")
@@ -99,7 +103,7 @@ def split_all_audio_files(root_textgrid_path, root_wav_path, max_workers=96):
 
     with tqdm.tqdm(total=l, desc='spliting flac files into 5-10 seconds') as pbar:
         with ThreadPoolExecutor(max_workers=max_workers) as executor:
-            threads = [executor.submit(split_audio, path, root_wav_path) for path in textgrid_paths]
+            threads = [executor.submit(split_audio, path, root_wav_path, index) for index, path in enumerate(textgrid_paths)]
             for _ in as_completed(threads):
                 pbar.update(1)
 
@@ -109,7 +113,8 @@ if __name__ == '__main__':
     import tarfile
     import shutil
     import fsspec
-    from utils import generate_txt, get_subset_df, genorate_pps_df, make_tarfile
+    from utils import generate_txt, get_subset_df, genorate_pps_df, make_tarfile, create_json_list
+
 
     chunk = 1000
     generate_subset_tsv = True
@@ -125,6 +130,7 @@ if __name__ == '__main__':
     dataset_root_path = os.path.join(root_path, f'{dataset_name}')
     dataset_textgrid_path = os.path.join(root_path, f'{dataset_name}_textgrids')
     dataset_split_path = os.path.join(root_path, f'{dataset_name}_split')
+    json_sizes_path = os.path.join(root_path, f'sizes.jsonl')
 
     s3 = fsspec.filesystem('s3')
     s3_dest = f's-laion/peoples_speech/{dataset_name}_tars/'
@@ -165,6 +171,10 @@ if __name__ == '__main__':
             tar_file_path = make_tarfile(f'{dataset_split_path}', f'{dataset_root_path}/{i}.tar')
             s3.put(tar_file_path, os.path.join(s3_dest, os.path.basename(tar_file_path)))
             print('File Uploaded to: ', os.path.join(s3_dest, os.path.basename(tar_file_path)))
+
+            # Upload sizes.jsonl to s3
+            create_json_list(json_sizes_path, {'filename':tar_file_path, 'num_samples':len(df)})
+            s3.put(json_sizes_path, 's-laion/peoples_speech/sizes.jsonl')
 
             shutil.rmtree(dataset_root_path)
             shutil.rmtree(dataset_textgrid_path)
