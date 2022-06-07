@@ -116,7 +116,7 @@ if __name__ == '__main__':
     from utils import generate_txt, get_subset_df, genorate_pps_df, make_tarfile, create_json_list
 
     max_workers = 50
-    chunk = 1000
+    chunk = 5000
     generate_subset_tsv = True
     pps_df_dir = '/home/knoriy/split_peoples_speech/pps_train.tsv'
 

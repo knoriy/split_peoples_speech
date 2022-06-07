@@ -40,7 +40,7 @@ wget https://storage.googleapis.com/example_download_data/subset_flac.tar  # dow
 ## Split audio
 
 ``` bash
-python main.py
+nohup python main.py > pps_train.out &
 ```
 
 alternatively you can use the provided notebook
