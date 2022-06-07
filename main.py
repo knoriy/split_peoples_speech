@@ -115,7 +115,7 @@ if __name__ == '__main__':
     import fsspec
     from utils import generate_txt, get_subset_df, genorate_pps_df, make_tarfile, create_json_list
 
-
+    max_workers = 50
     chunk = 1000
     generate_subset_tsv = True
     pps_df_dir = '/home/knoriy/split_peoples_speech/pps_train.tsv'
@@ -158,14 +158,14 @@ if __name__ == '__main__':
                 df = get_subset_df(f'{dataset_root_path}/**/*.flac', pps_df)
 
             # Save transcript to file
-            save_all_text_to_file(df, dataset_name)
+            save_all_text_to_file(df, dataset_name, max_workers=max_workers)
 
             # Convert Flac to wav
-            convert_all_to_wav(df, os.path.join(root_path, dataset_name))
+            convert_all_to_wav(df, os.path.join(root_path, dataset_name), max_workers=max_workers)
 
             # Get audio text alignments and split audio
             generate_textgrids(os.path.join(root_path, dataset_name))
-            split_all_audio_files(dataset_textgrid_path, dataset_root_path)
+            split_all_audio_files(dataset_textgrid_path, dataset_root_path, max_workers=max_workers)
 
             # Upload Split files to s3
             tar_file_path = make_tarfile(f'{dataset_split_path}', f'{dataset_root_path}/{i}.tar')
