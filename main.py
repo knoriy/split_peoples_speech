@@ -174,7 +174,7 @@ if __name__ == '__main__':
 
             # Upload sizes.jsonl to s3
             create_json_list(json_sizes_path, {'filename':tar_file_path, 'num_samples':len(df)})
-            s3.put(json_sizes_path, 's-laion/peoples_speech/sizes.jsonl')
+            s3.put(json_sizes_path, 's-laion/peoples_speech/pps_train_tars/sizes.jsonl')
 
             shutil.rmtree(dataset_root_path)
             shutil.rmtree(dataset_textgrid_path)
