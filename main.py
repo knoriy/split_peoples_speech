@@ -115,8 +115,8 @@ if __name__ == '__main__':
     import fsspec
     from utils import generate_txt, get_subset_df, genorate_pps_df, make_tarfile, create_json_list
 
-    max_workers = 50
-    chunk = 5000
+    max_workers = 70
+    chunk = 1000
     generate_subset_tsv = True
     pps_df_dir = '/home/knoriy/split_peoples_speech/pps_train.tsv'
 
@@ -168,12 +168,17 @@ if __name__ == '__main__':
             split_all_audio_files(dataset_textgrid_path, dataset_root_path, max_workers=max_workers)
 
             # Upload Split files to s3
+            tar_file_path = make_tarfile(f'{dataset_textgrid_path}', f'{dataset_root_path}/textgrid_{i}.tar')
+            s3.put(tar_file_path, os.path.join(s3_dest, os.path.basename(tar_file_path)))
+            print('File Uploaded to: ', os.path.join(s3_dest, os.path.basename(tar_file_path)))
+
+            # Upload Split files to s3
             tar_file_path = make_tarfile(f'{dataset_split_path}', f'{dataset_root_path}/{i}.tar')
             s3.put(tar_file_path, os.path.join(s3_dest, os.path.basename(tar_file_path)))
             print('File Uploaded to: ', os.path.join(s3_dest, os.path.basename(tar_file_path)))
 
             # Upload sizes.jsonl to s3
-            create_json_list(json_sizes_path, {'filename':tar_file_path, 'num_samples':len(df)})
+            json_sizes_path = create_json_list(json_sizes_path, {'filename':tar_file_path, 'num_samples':len(df)*2})
             s3.put(json_sizes_path, 's-laion/peoples_speech/pps_train_tars/sizes.jsonl')
 
             shutil.rmtree(dataset_root_path)
