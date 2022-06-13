@@ -65,6 +65,6 @@ Dataset_root
 PID 57554
 ## TODO
 
-- [x] Save json with `{<filename.tar>: <number of samples (int)>}`
-- [X] Save sample with number ids e.g. `0.flac`
-
+- [x] Make multilingual
+- [x] Work with miltiple datasets and folder structures
+- [x] fixed tar file to align with audio-dataset
